@@ -4,14 +4,14 @@ type UserType = {
   name: string;
   age: number;
   username: string;
-  password: string;
+  hash: string;
 };
 
 const UserSchema = new Schema<UserType>({
   name: String,
   age: Number,
-  username: String,
-  password: String,
+  username: { unique: true, type: String },
+  hash: String,
 });
 
 const User = model<UserType>("user", UserSchema);
