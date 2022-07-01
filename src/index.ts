@@ -20,11 +20,11 @@ app.use(
 );
 
 app.post("/signup", (req, res) => {
-  const { username, password, age, name } = req.body;
+  const { username, password, age, name, role } = req.body;
   const hash = crypto
     .pbkdf2Sync(password, "SECRETSALT1234", 60, 64, "sha256")
     .toString("hex");
-  const user = new UserModel({ username, hash, age, name });
+  const user = new UserModel({ username, hash, age, name, role });
   user.save().then(() => {
     res.send({ message: "user created successfully", user });
   });
@@ -42,7 +42,7 @@ app.post("/signin", async (req, res) => {
   }
 
   //Generate a unique token
-  const token = jwt.sign({ name: user?.name, age: user?.age }, "SECRET1234", {
+  const token = jwt.sign({ role: user?.role, id: user?._id }, "SECRET1234", {
     expiresIn: "1d",
   });
   res.send({ message: "Sign in success", token });
