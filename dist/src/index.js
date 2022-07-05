@@ -17,22 +17,39 @@ const express_1 = __importDefault(require("express"));
 const db_1 = __importDefault(require("../db/db"));
 const user_1 = __importDefault(require("../models/user"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const express_session_1 = __importDefault(require("express-session"));
+const node_crypto_1 = __importDefault(require("node:crypto"));
 const app = (0, express_1.default)();
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use(express_1.default.json());
+app.use((0, express_session_1.default)({
+    secret: "SECRET",
+    resave: false,
+    saveUninitialized: true,
+    // cookie: { secure: true }
+}));
 app.post("/signup", (req, res) => {
-    const { username, password, age, name } = req.body;
-    const user = new user_1.default({ username, password, age, name });
+    const { username, password, age, name, role } = req.body;
+    const hash = node_crypto_1.default
+        .pbkdf2Sync(password, "SECRETSALT1234", 60, 64, "sha256")
+        .toString("hex");
+    const user = new user_1.default({ username, hash, age, name, role });
     user.save().then(() => {
-        res.send({ message: "user created successfully" });
+        res.send({ message: "user created successfully", user });
     });
 });
 app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { username, password } = req.body;
     const user = yield user_1.default.findOne({ username });
     //check hash.Check if they are same
+    const hash = node_crypto_1.default
+        .pbkdf2Sync(password, "SECRETSALT1234", 60, 64, "sha256")
+        .toString("hex");
+    if (hash !== (user === null || user === void 0 ? void 0 : user.hash)) {
+        return res.send("Invalid credentials");
+    }
     //Generate a unique token
-    const token = jsonwebtoken_1.default.sign({ name: user === null || user === void 0 ? void 0 : user.name, age: user === null || user === void 0 ? void 0 : user.age }, "SECRET1234", {
+    const token = jsonwebtoken_1.default.sign({ role: user === null || user === void 0 ? void 0 : user.role, id: user === null || user === void 0 ? void 0 : user._id }, "SECRET1234", {
         expiresIn: "1d",
     });
     res.send({ message: "Sign in success", token });
@@ -59,6 +76,22 @@ app.get("/profile/:id", (req, res) => __awaiter(void 0, void 0, void 0, function
         }
     }
 }));
+app.get("/", (req, res) => {
+    console.log(req.session);
+    // if (req.session.views) {
+    //   req.session.views++;
+    //   res.setHeader("Content-Type", "text/html");
+    //   res.write("<p>views: " + req.session.views + "</p>");
+    //   // res.write("<p>expires in: " + req.session.cookie.maxAge / 1000 + "s</p>");
+    //   res.end();
+    // } else {
+    //   req.session.views = 1;
+    //   res.end("welcome to the session demo. refresh!");
+    // }
+    return res
+        .cookie("auth", "12345", { httpOnly: true, secure: false })
+        .send("Cookie Set");
+});
 app.listen(8080, () => {
     db_1.default.then((conn) => {
         console.log("server started on http://localhost:8080/");
