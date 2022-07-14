@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 
 //Transport
 const transport = nodemailer.createTransport({
-  host: "smpt.ethereal.email",
+  host: "smtp.ethereal.email",
   secure: false,
   port: 587, //465 : SSL , 587 : TLS
   auth: {
